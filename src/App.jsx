@@ -84,10 +84,27 @@ export default function App() {
       {/* Full Screen Loading Overlay */}
       {!assetsLoaded && <LoadingScreen setAssetsLoaded={setAssetsLoaded} />}
       
-      {/* Foreground UI and Game Canvas (Hidden completely until loaded to prevent stuttering) */}
+      {/* Background 3D Canvas (Blurred natively via CSS for absolute precision) */}
       <div style={{ 
         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
-        zIndex: 1, opacity: assetsLoaded ? 1 : 0, transition: 'opacity 0.3s ease-in' 
+        zIndex: 1, filter: 'blur(3px)', opacity: assetsLoaded ? 1 : 0, transition: 'opacity 0.3s ease-in' 
+      }}>
+        <Canvas 
+          gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2, outputColorSpace: THREE.SRGBColorSpace }}
+        >
+          <Suspense fallback={null}>
+            <OrthographicCamera makeDefault position={[0, 3, 12]} zoom={60} near={-50} far={1000} />
+            <fog attach="fog" args={['#BAE6FD', 15, 120]} />
+            <Lighting />
+            <ParallaxBackground />
+          </Suspense>
+        </Canvas>
+      </div>
+
+      {/* Foreground UI and Game Canvas (Unblurred) */}
+      <div style={{ 
+        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+        zIndex: 2, opacity: assetsLoaded ? 1 : 0, transition: 'opacity 0.3s ease-in' 
       }}>
         <StartScreen />
         <GameOverScreen />
@@ -109,9 +126,6 @@ export default function App() {
           <fog attach="fog" args={['#BAE6FD', 15, 120]} />
           
           <Lighting />
-          
-          {/* Adds 3D depth through slower moving background objects */}
-          <ParallaxBackground />
           
           <InfinitePlatform />
           <Player />

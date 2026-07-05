@@ -1,5 +1,5 @@
 import React from 'react';
-import { EffectComposer, Bloom, N8AO, SMAA } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, N8AO, SMAA, DepthOfField } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 
 export const PostProcessingEffects = ({ enable = true }) => {
