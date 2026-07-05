@@ -93,7 +93,7 @@ export default function App() {
           gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2, outputColorSpace: THREE.SRGBColorSpace }}
         >
           <Suspense fallback={null}>
-            <OrthographicCamera makeDefault position={[0, 3, 12]} zoom={60} near={-50} far={1000} />
+            <OrthographicCamera makeDefault position={[0, 5.5, 12]} zoom={60} near={-50} far={1000} />
             <fog attach="fog" args={['#BAE6FD', 15, 120]} />
             <Lighting />
             <ParallaxBackground />
@@ -120,7 +120,7 @@ export default function App() {
         }}
       >
         <Suspense fallback={null}>
-          <OrthographicCamera makeDefault position={[0, 3, 12]} zoom={60} near={-50} far={1000} />
+          <OrthographicCamera makeDefault position={[0, 0, 12]} zoom={60} near={-50} far={1000} />
           
           {/* Real 3D volumetric fog pushed far back to give a consistent, very subtle fade to all layers */}
           <fog attach="fog" args={['#BAE6FD', 15, 120]} />

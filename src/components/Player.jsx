@@ -192,11 +192,11 @@ export const Player = () => {
     }
 
     // Camera follow logic: subtly track the player's vertical position
-    const heightAboveGround = group.current.position.y - floorY;
-    // Move the camera up by only 30% of the player's jump height for a gentle effect
-    const targetCameraY = 3.0 + (heightAboveGround * 0.3);
+    // Base camera Y is 0.0. We add a small fraction of the player's jump height.
+    const heightAboveGround = Math.max(0, group.current.position.y - floorY);
+    const targetCameraY = 0.0 + (heightAboveGround * 0.25);
     // Smoothly interpolate the camera's Y position towards the target
-    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCameraY, 8 * delta);
+    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCameraY, 6 * delta);
     
     // Game Over Logic: If player falls into a gap and drops off screen
     if (group.current.position.y < -10 && !gameState.gameOver) {
@@ -211,7 +211,7 @@ export const Player = () => {
   });
   return (
     <group ref={group} position={[-2, floorY, 0]}>
-      <primitive object={scene} scale={2.2} rotation={[0, Math.PI / 2, 0]} />
+      <primitive object={scene} scale={1.87} rotation={[0, Math.PI / 2, 0]} />
     </group>
   );
 };
