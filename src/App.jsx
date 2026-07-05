@@ -10,7 +10,7 @@ import { PostProcessingEffects } from './components/PostProcessing';
 import { ParallaxBackground } from './components/ParallaxBackground';
 import { GameOverScreen } from './components/GameOverScreen';
 import { StartScreen } from './components/StartScreen';
-import { gameState } from './gameLogic';
+import { gameState, resetGameState } from './gameLogic';
 
 import { Suspense } from 'react';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -71,6 +71,12 @@ const ScoreBoard = () => {
 
 export default function App() {
   const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [gameKey, setGameKey] = useState(0);
+
+  const handleRestart = () => {
+    resetGameState();
+    setGameKey(prev => prev + 1);
+  };
 
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: '#BAE6FD', position: 'relative', overflow: 'hidden' }}>
@@ -90,6 +96,7 @@ export default function App() {
         zIndex: 1, filter: 'blur(3px)', opacity: assetsLoaded ? 1 : 0, transition: 'opacity 0.3s ease-in' 
       }}>
         <Canvas 
+          key={`bg-${gameKey}`}
           gl={{ antialias: false, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2, outputColorSpace: THREE.SRGBColorSpace }}
         >
           <Suspense fallback={null}>
@@ -106,11 +113,12 @@ export default function App() {
         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
         zIndex: 2, opacity: assetsLoaded ? 1 : 0, transition: 'opacity 0.3s ease-in' 
       }}>
-        <StartScreen />
-        <GameOverScreen />
+        <StartScreen key={`start-${gameKey}`} />
+        <GameOverScreen onRestart={handleRestart} />
         <ScoreBoard />
         
         <Canvas 
+        key={`fg-${gameKey}`}
         shadows={{ type: THREE.PCFSoftShadowMap }} 
         gl={{ 
           antialias: false, // Disabled native AA because we use SMAA post-processing

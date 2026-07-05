@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { gameState } from '../gameLogic';
 
-export const GameOverScreen = () => {
+export const GameOverScreen = ({ onRestart }) => {
   const [isGameOver, setIsGameOver] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (gameState.gameOver !== isGameOver) {
-        setIsGameOver(gameState.gameOver);
+      if (gameState.showGameOverScreen !== isGameOver) {
+        setIsGameOver(gameState.showGameOverScreen);
         setFinalScore(gameState.score);
       }
     }, 100);
@@ -68,7 +68,7 @@ export const GameOverScreen = () => {
       
       {/* Try Again Button */}
       <button 
-        onClick={() => window.location.reload()}
+        onClick={onRestart}
         onMouseDown={(e) => { e.currentTarget.style.transform = 'translateY(6px)'; e.currentTarget.style.boxShadow = '0px 0px 0px #BAE6FD'; }}
         onMouseUp={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0px 6px 0px #BAE6FD'; }}
         onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0px)'; e.currentTarget.style.boxShadow = '0px 6px 0px #BAE6FD'; }}

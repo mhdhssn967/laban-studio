@@ -198,9 +198,47 @@ export const Player = () => {
     // Smoothly interpolate the camera's Y position towards the target
     state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCameraY, 6 * delta);
     
+    // Trap Collision Logic
+    if (!gameState.gameOver) {
+      for (const trap of (gameState.activeTraps || [])) {
+        // Distance check between player (-2, playerY) and trap (trap.x, trap.y)
+        const dist = Math.hypot(trap.x - (-2), trap.y - group.current.position.y);
+        
+        if (dist < (trap.radius + 0.2)) { // Hitbox check
+          // Trigger Hit State
+          sounds.hit.play();
+          sounds.bgm.stop();
+          gameState.speed = 0; // Freeze environment immediately
+          
+          const runAction = getAction('run');
+          const jumpAction = getAction('jump');
+          if (runAction) runAction.fadeOut(0.1);
+          if (jumpAction) jumpAction.fadeOut(0.1);
+          
+          const fallAction = getAction('fall');
+          if (fallAction) fallAction.reset().fadeIn(0.1).play();
+          
+          // Disable jumping controls by faking game over state internally for the jump handler,
+          // but we delay the ACTUAL game over screen for 2 seconds.
+          gameState.gameOver = true; // Prevents further jumping and logic updates
+          
+          setTimeout(() => {
+            // Re-trigger a state update or just let the main Game Over screen naturally catch it.
+            // Wait, StartScreen and App check `gameState.gameOver` directly, but they don't poll it.
+            // Actually, we need a way to signal the React tree after 2s.
+            // We can just dispatch a custom event or mutate a deeply polled variable.
+            // Let's set a flag that the GameOverScreen polls.
+            gameState.showGameOverScreen = true;
+          }, 2000);
+          break;
+        }
+      }
+    }
+
     // Game Over Logic: If player falls into a gap and drops off screen
     if (group.current.position.y < -10 && !gameState.gameOver) {
       gameState.gameOver = true;
+      gameState.showGameOverScreen = true;
       gameState.speed = 0; // Freeze the environment
       sounds.fall.play(); // Play death sound
       sounds.bgm.stop(); // Instantly stop the background music

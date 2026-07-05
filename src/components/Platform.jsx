@@ -102,8 +102,8 @@ const FloatingPlatform = ({ initialX, initialY, model, actualPlatformWidth }) =>
       // Wrap around screen when off left edge
       if (ref.current.position.x < -30) {
         ref.current.position.x += 80 + (Math.random() * 60); 
-        // Platforms should only come in two different heights
-        ref.current.position.y = Math.random() > 0.5 ? 0.5 : 2.5; 
+        // Platforms should only come in two constant different heights (lower and upper)
+        ref.current.position.y = Math.random() > 0.5 ? 0.5 : 3.5; 
         setCount(Math.floor(Math.random() * 3) + 1);
       }
 
@@ -158,9 +158,9 @@ const CoinSpawner = ({ initialX }) => {
   // Random height levels matching the platforms:
   // Ground level ~ -1.5
   // Lower floating platform ~ 1.5
-  // Higher floating platform ~ 3.5
+  // Higher floating platform ~ 4.2
   const [yLevel, setYLevel] = useState(() => {
-    const levels = [-1.5, 1.5, 3.5];
+    const levels = [-1.5, 1.5, 4.2];
     return levels[Math.floor(Math.random() * levels.length)];
   });
 
@@ -181,7 +181,7 @@ const CoinSpawner = ({ initialX }) => {
         // Reduced the added distance to spawn coins much more frequently
         ref.current.position.x += 60 + (Math.random() * 40); 
         setCount(Math.floor(Math.random() * 11) + 5);
-        const levels = [-1.5, 1.5, 3.5];
+        const levels = [-1.5, 1.5, 4.2];
         setYLevel(levels[Math.floor(Math.random() * levels.length)]);
         
         // Respawn collected coins when they loop back around!
@@ -245,6 +245,120 @@ const CoinSpawner = ({ initialX }) => {
   );
 };
 
+const TrapSpawner = ({ initialX, delayStart = 0, scoreThreshold = 0 }) => {
+  const ref = useRef();
+  const id = useRef(Math.random());
+  
+  // Randomly choose trap type: 0 = Cylinder, 1 = Spiky Ball
+  const [trapType, setTrapType] = useState(() => Math.random() > 0.5 ? 0 : 1);
+  const { scene: cylinderScene } = useGLTF('/Cylinder Hazard.glb');
+  const { scene: spikyScene } = useGLTF('/Spiky Ball.glb');
+  
+  // Clone models so multiple traps can exist
+  const cylinder = useMemo(() => cylinderScene.clone(), [cylinderScene]);
+  const spiky = useMemo(() => spikyScene.clone(), [spikyScene]);
+  
+  const [active, setActive] = useState(true);
+  
+  // Track whether it has been initialized yet
+  const initialized = useRef(false);
+
+  // Force the trap to instantly seek a valid platform on the very first frame
+  useEffect(() => {
+    if (ref.current && !initialized.current) {
+      ref.current.position.x = -31; 
+      initialized.current = true;
+    }
+  }, []);
+
+  useFrame((state, delta) => {
+    if (!gameState.gameStarted || gameState.gameOver) return;
+    
+    // Stagger trap appearances via time OR wait until the player reaches a specific score threshold
+    if (gameState.gameTime < delayStart || gameState.score < scoreThreshold) {
+      if (ref.current && ref.current.position.x !== -31) {
+        ref.current.position.x = -31;
+      }
+      return;
+    }
+    
+    if (ref.current) {
+      ref.current.position.x -= (gameState.baseScrollSpeed * gameState.speed) * delta;
+      
+      // Rotate ALL traps ONLY on the Y-axis
+      ref.current.rotation.y += 2 * delta;
+      
+      if (ref.current.position.x < -30) {
+        // Find a platform that is currently offscreen to the right to snap onto
+        const allPlatforms = [...gameState.activeGroundPlatforms, ...gameState.activeFloatingPlatforms];
+        const validPlatforms = allPlatforms.filter(p => {
+          if (p.left <= 80) return false;
+          
+          // Calculate where the trap WOULD snap to
+          const targetX = (p.left + p.right) / 2;
+          
+          // Check if any EXISTING trap is already sitting on or very near this platform
+          const hasTrap = (gameState.activeTraps || []).some(t => Math.abs(t.x - targetX) < 10);
+          
+          return !hasTrap;
+        });
+        
+        if (validPlatforms.length > 0) {
+          const targetPlatform = validPlatforms[Math.floor(Math.random() * validPlatforms.length)];
+          // Snap strictly to the center of the platform natively
+          ref.current.position.x = (targetPlatform.left + targetPlatform.right) / 2;
+          // Mutate Y natively so React doesn't trigger a re-render and wipe out the X coordinate!
+          ref.current.position.y = targetPlatform.surfaceY;
+          // 50/50 chance to spawn either the Cylinder or Spiky Ball
+          setTrapType(Math.random() > 0.5 ? 1 : 0);
+          setActive(true);
+        } else {
+          // If no platforms are far enough right now, hover just offscreen to retry next frame
+          ref.current.position.x = -29.9;
+        }
+      }
+
+      // Update collision hitboxes
+      const existingIdx = gameState.activeTraps.findIndex(t => t.id === id.current);
+      if (active) {
+        const trapData = {
+          id: id.current,
+          x: ref.current.position.x,
+          y: ref.current.position.y,
+          // Hitbox is much tighter to be forgiving to the player
+          radius: trapType === 0 ? 0.25 : 0.75
+        };
+        
+        if (existingIdx !== -1) {
+          gameState.activeTraps[existingIdx] = trapData;
+        } else {
+          gameState.activeTraps.push(trapData);
+        }
+      } else if (existingIdx !== -1) {
+         gameState.activeTraps.splice(existingIdx, 1);
+      }
+    }
+  });
+
+  useEffect(() => {
+    return () => {
+      gameState.activeTraps = gameState.activeTraps.filter(t => t.id !== id.current);
+    };
+  }, []);
+
+  if (!active) return null;
+
+  return (
+    <group ref={ref} position={[0, -50, 0]}>
+      {trapType === 0 ? (
+        <primitive object={cylinder} scale={0.4} position={[0, 0.45, 0]} />
+      ) : (
+        <primitive object={spiky} scale={0.8} position={[0, 1.0, 0]} />
+      )}
+    </group>
+  );
+};
+
 export const InfinitePlatform = () => {
   const groupRef = useRef();
   
@@ -287,6 +401,11 @@ export const InfinitePlatform = () => {
   }, [fbx]);
   
   useFrame((state, delta) => {
+    if (!gameState.gameStarted || gameState.gameOver) return;
+    
+    // Track total active gameplay time for progressive difficulty events
+    gameState.gameTime += delta;
+    
     // Gradually increase game speed over time
     if (gameState.speed < gameState.maxSpeed) {
       gameState.speed += gameState.speedIncrement * delta;
@@ -308,10 +427,10 @@ export const InfinitePlatform = () => {
       {/* Floating platform generation overlay */}
       {actualLength > 0 && (
         <group>
-          <FloatingPlatform initialX={30} initialY={1} model={fbx} actualPlatformWidth={actualLength} />
-          <FloatingPlatform initialX={60} initialY={0.5} model={fbx} actualPlatformWidth={actualLength} />
-          <FloatingPlatform initialX={90} initialY={2.5} model={fbx} actualPlatformWidth={actualLength} />
-          <FloatingPlatform initialX={120} initialY={-0.5} model={fbx} actualPlatformWidth={actualLength} />
+          <FloatingPlatform initialX={30} initialY={0.5} model={fbx} actualPlatformWidth={actualLength} />
+          <FloatingPlatform initialX={60} initialY={3.5} model={fbx} actualPlatformWidth={actualLength} />
+          <FloatingPlatform initialX={90} initialY={0.5} model={fbx} actualPlatformWidth={actualLength} />
+          <FloatingPlatform initialX={120} initialY={3.5} model={fbx} actualPlatformWidth={actualLength} />
           
           <CoinSpawner initialX={20} />
           <CoinSpawner initialX={40} />
@@ -319,6 +438,20 @@ export const InfinitePlatform = () => {
           <CoinSpawner initialX={80} />
           <CoinSpawner initialX={100} />
           <CoinSpawner initialX={120} />
+          
+          {/* Early game scattered traps */}
+          <TrapSpawner initialX={50} delayStart={5} />
+          <TrapSpawner initialX={100} delayStart={10} />
+          <TrapSpawner initialX={150} delayStart={15} />
+          <TrapSpawner initialX={200} delayStart={20} />
+          <TrapSpawner initialX={250} delayStart={25} />
+          <TrapSpawner initialX={300} delayStart={30} />
+          
+          {/* Late game intense trap wave (Activates when Score > 150) */}
+          <TrapSpawner initialX={350} scoreThreshold={150} />
+          <TrapSpawner initialX={400} scoreThreshold={160} />
+          <TrapSpawner initialX={450} scoreThreshold={170} />
+          <TrapSpawner initialX={500} scoreThreshold={180} />
         </group>
       )}
     </>
@@ -327,3 +460,5 @@ export const InfinitePlatform = () => {
 
 useFBX.preload('/platform.fbx');
 useGLTF.preload('/Goldcoin.glb');
+useGLTF.preload('/Cylinder Hazard.glb');
+useGLTF.preload('/Spiky Ball.glb');
