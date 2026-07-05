@@ -17,8 +17,13 @@ import { LoadingScreen } from './components/LoadingScreen';
 
 const ScoreBoard = () => {
   const [score, setScore] = useState(0);
+  const [playerName, setPlayerName] = useState('');
   
   useEffect(() => {
+    // Sync cached player name
+    const cachedName = localStorage.getItem('laban_playerName');
+    if (cachedName) setPlayerName(cachedName);
+    
     // Poll the global score state rapidly to keep the React UI perfectly synced with the 3D physics engine
     const interval = setInterval(() => {
       if (gameState.score !== score) {
@@ -31,23 +36,33 @@ const ScoreBoard = () => {
   return (
     <div style={{
       position: 'absolute', top: 20, left: 30, zIndex: 10,
-      display: 'flex', alignItems: 'center', gap: '10px',
-      fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', fontSize: '28px', fontWeight: 'bold',
-      color: '#FFFFFF',
-      textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+      display: 'flex', flexDirection: 'column', gap: '5px',
+      fontFamily: '"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
     }}>
-      {/* Custom CSS Coin Icon */}
+      {playerName && (
+        <div style={{
+          fontSize: '18px', fontWeight: 'bold', color: '#BAE6FD', textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
+        }}>
+          {playerName.toUpperCase()}
+        </div>
+      )}
       <div style={{
-         width: '28px', height: '28px', borderRadius: '50%',
-         background: 'radial-gradient(circle at 30% 30%, #FFDF00, #DAA520)',
-         border: '2px solid #B8860B',
-         boxShadow: '0px 2px 4px rgba(0,0,0,0.5), inset 0px 1px 2px rgba(255,255,255,0.8)',
-         display: 'flex', justifyContent: 'center', alignItems: 'center',
-         fontSize: '16px', fontWeight: '900', color: '#8B6508', textShadow: '1px 1px 0px #FFDF00'
+        display: 'flex', alignItems: 'center', gap: '10px',
+        fontSize: '28px', fontWeight: 'bold', color: '#FFFFFF', textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
       }}>
-         $
+        {/* Custom CSS Coin Icon */}
+        <div style={{
+           width: '28px', height: '28px', borderRadius: '50%',
+           background: 'radial-gradient(circle at 30% 30%, #FFDF00, #DAA520)',
+           border: '2px solid #B8860B',
+           boxShadow: '0px 2px 4px rgba(0,0,0,0.5), inset 0px 1px 2px rgba(255,255,255,0.8)',
+           display: 'flex', justifyContent: 'center', alignItems: 'center',
+           fontSize: '16px', fontWeight: '900', color: '#8B6508', textShadow: '1px 1px 0px #FFDF00'
+        }}>
+           $
+        </div>
+        {score}
       </div>
-      {score}
     </div>
   );
 };
